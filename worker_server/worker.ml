@@ -1,4 +1,5 @@
 open Protocol
+open Program
 
 let send_response client response =
   let success = Connection.output client response in
@@ -13,14 +14,24 @@ let rec handle_request client =
     Some v ->
       begin
         match v with
-        | InitMapper source -> 
-          failwith "It's been a long time, old one."
-        | InitReducer source -> 
-          failwith "Young master, I cannot aid one who opposes the Master!"
+        | InitMapper source -> send_response client (Mapper (build source))
+        | InitReducer source -> send_response client (Reducer (build source))
         | MapRequest (id, k, v) -> 
-          failwith "You won't go unrewarded."
+          (* Validate the id *)
+          (* Execute the request *) 
+          begin
+            match run id v with
+            | None -> send_response client (RuntimeError (id, "fail"))
+            | Some result -> send_response client (MapResults (id, result))
+          end
         | ReduceRequest (id, k, v) -> 
-          failwith "Really? In that case, just tell me what you need."
+          (* Validate the id *)
+          (* Execute the request *) 
+          begin
+            match run id v with
+            | None -> send_response client (RuntimeError (id, "fail"))
+            | Some result -> send_response client (ReduceResults (id, result))
+          end
       end
   | None ->
       Connection.close client;
