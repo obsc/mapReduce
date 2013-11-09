@@ -3,6 +3,17 @@ open Program
 
 type id_type = Map | Reduce
 let ids : (worker_id, id_type) Hashtbl.t = Hashtbl.create 10
+let mutex : Mutex.t = Mutex.create ()
+
+let add (k : worker_id) (v : id_type) : unit =
+  Mutex.lock mutex;
+  Hashtbl.add ids k v;
+  Mutex.unlock mutex
+
+let is_valid (k : worker_id) (expected : id_type) : bool =
+  Mutex.lock mutex;
+  let b : bool = Hashtbl.mem ids k && Hashtbl.find ids k = expected in
+  Mutex.unlock mutex; b
 
 let send_response client response =
   let success = Connection.output client response in
@@ -18,20 +29,20 @@ let rec handle_request client =
     | InitMapper source ->
       begin
       match build source with
-      | (Some id, str) -> Hashtbl.add ids id Map;
+      | (Some id, str) -> add id Map;
                           send_response client (Mapper (Some id, str))
       | (None, str) -> send_response client (Mapper (None, str))
       end
     | InitReducer source ->
       begin
       match build source with
-      | (Some id, str) -> Hashtbl.add ids id Reduce;
+      | (Some id, str) -> add id Reduce;
                           send_response client (Mapper (Some id, str))                                
       | (None, str) -> send_response client (Mapper (None, str))
       end
     | MapRequest (id, k, v) ->
       (* Validate the id *)
-      begin if (Hashtbl.mem ids id) && (Hashtbl.find ids id = Map) then
+      begin if is_valid id Map then
         (* Execute the request *) 
         begin
         match run id v with
@@ -42,7 +53,7 @@ let rec handle_request client =
       end
     | ReduceRequest (id, k, v) ->
       (* Validate the id *)
-      begin if (Hashtbl.mem ids id) && (Hashtbl.find ids id = Reduce) then
+      begin if is_valid id Reduce then
         (* Execute the request *) 
         begin
         match run id v with

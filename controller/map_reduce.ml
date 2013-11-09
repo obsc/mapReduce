@@ -70,8 +70,8 @@ let combine kv_pairs : (string * string list) list =
   List.iter add kv_pairs;
   Hashtbl.fold (fun k v a -> (k, v)::a) tbl []
 
-let reduce kvs_pairs reduce_filename : (string * string list) list =
-  let tbl : (int, reducer status) Hashtbl.t = Hashtbl.create 10 in
+let reduce kvs_pairs reduce_filename : (string * string list) list = failwith "potato"
+  (*let tbl : (int, reducer status) Hashtbl.t = Hashtbl.create 10 in
   let mutex : Mutex.t = Mutex.create () in
   let p : pool = create 100 in
   let r : reducer worker_manager = initialize_reducers reduce_filename in
@@ -86,7 +86,7 @@ let reduce kvs_pairs reduce_filename : (string * string list) list =
       | Some l -> begin
         set tbl mutex id (Success l);
         push_worker r reduce_worker
-      end in
+      end in*)
 
 let map_reduce app_name mapper_name reducer_name kv_pairs =
   let map_filename    = Printf.sprintf "apps/%s/%s.ml" app_name mapper_name  in
