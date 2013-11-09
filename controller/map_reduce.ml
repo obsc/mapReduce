@@ -3,8 +3,8 @@ open Worker_manager
 open Thread_pool
 
 type status =
-  | Unstarted
-  | Attempt of int
+  | Standby of int * string * string
+  | Attempt of int * string * string
   | Success of (string * string) list
   | Failure
 
@@ -19,18 +19,32 @@ let get (tbl : ('a, 'b) Hashtbl.t) (m : Mutex.t) (k : 'a) : 'b =
   Mutex.unlock m; v
 
 let map kv_pairs map_filename : (string * string) list =
-  let tasks : (int * (string * string)) list =
-    List.mapi (fun id x -> (id, x)) kv_pairs in
   let tbl : (int, status) Hashtbl.t = Hashtbl.create 10 in
+  let mutex : Mutex.t = Mutex.create () in
   let p : pool = create 100 in
   let m : mapper worker_manager = initialize_mappers map_filename in
-  let rec loop (t : (int * (string * string)) list) : unit =
-    loop t in
-  List.iter (fun (id, kv) -> Hashtbl.add tbl id Unstarted) tasks;
-  loop tasks;
+  let job (x : int) (k : string) (v : string) (u : unit) : unit =
+    () in
+  let check (f, t : bool * int list) (x : int) : bool * int list =
+    match get tbl mutex x with
+      | Standby (x, k, v) -> begin
+        set tbl mutex x (Attempt (x, k, v));
+        add_work (job x k v) p;
+        (false, x::t)
+      end
+      | Attempt (x, k, v) -> (false, x::t)
+      | Success l         -> (f, t)
+      | Failure           -> (f, t) in
+  let rec loop (tasks : int list) : unit =
+    Thread.delay 0.1;
+    let (flag, newtasks) = List.fold_left check (true, []) tasks in
+    if flag then () else loop (List.rev newtasks) in
+  List.iteri (fun id (k, v) -> Hashtbl.add tbl id (Standby (0, k, v))) kv_pairs;
+  loop (List.mapi (fun id x -> id) kv_pairs);
   clean_up_workers m;
   destroy p;
-  let append_output (id : int) (s : status) a = match s with
+  let append_output (id : int) (s : status) a =
+    match s with
     | Success l -> l@a
     | _         -> a in
   Hashtbl.fold append_output tbl []
