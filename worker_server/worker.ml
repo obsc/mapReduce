@@ -15,21 +15,21 @@ let send_response client response =
 let rec handle_request client =
   let get_connection_status v = 
     match v with
-    | InitMapper source -> 
+    | InitMapper source ->
       begin
       match build source with
       | (Some id, str) -> Hashtbl.add ids id Map;
                           send_response client (Mapper (Some id, str))
       | (None, str) -> send_response client (Mapper (None, str))
       end
-    | InitReducer source -> 
+    | InitReducer source ->
       begin
       match build source with
       | (Some id, str) -> Hashtbl.add ids id Reduce;
                           send_response client (Mapper (Some id, str))                                
       | (None, str) -> send_response client (Mapper (None, str))
       end
-    | MapRequest (id, k, v) -> 
+    | MapRequest (id, k, v) ->
       (* Validate the id *)
       begin if (Hashtbl.mem ids id) && (Hashtbl.find ids id = Map) then
         (* Execute the request *) 
@@ -40,7 +40,7 @@ let rec handle_request client =
         end
         else send_response client (InvalidWorker id)
       end
-    | ReduceRequest (id, k, v) -> 
+    | ReduceRequest (id, k, v) ->
       (* Validate the id *)
       begin if (Hashtbl.mem ids id) && (Hashtbl.find ids id = Reduce) then
         (* Execute the request *) 
