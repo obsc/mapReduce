@@ -16,4 +16,4 @@ let rec get_sum trans acc : int64 =
     else acc
   end
   | []   -> acc in
-Program.set_output [to_string (get_sum (List.sort rev_cmp trans))]
+Program.set_output [to_string (get_sum (List.sort rev_cmp trans) 0L)]

@@ -5,5 +5,5 @@ let med =
 	(* odd case *)
 	if List.length sorted mod 2 = 1 then List.nth sorted mid
 	(* even case *)
-	else ((List.nth sorted (mid - 1)) +. (List.nth sorted mid)) /. 2 in
+	else ((List.nth sorted (mid - 1)) +. (List.nth sorted mid)) /. 2. in
 Program.set_output [string_of_float med]

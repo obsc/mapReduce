@@ -1,7 +1,7 @@
 open Protocol
 open Program
 
-type id_type = Map | Reduce
+type id_type = M | R
 let ids : (worker_id, id_type) Hashtbl.t = Hashtbl.create 10
 let mutex : Mutex.t = Mutex.create ()
 
@@ -29,23 +29,23 @@ let rec handle_request client =
     | InitMapper source ->
       begin
       match build source with
-      | (Some id, str) -> add id Map;
+      | (Some id, str) -> add id M;
                           send_response client (Mapper (Some id, str))
       | (None, str) -> send_response client (Mapper (None, str))
       end
     | InitReducer source ->
       begin
       match build source with
-      | (Some id, str) -> add id Reduce;
-                          send_response client (Mapper (Some id, str))                                
-      | (None, str) -> send_response client (Mapper (None, str))
+      | (Some id, str) -> add id R;
+                          send_response client (Reducer (Some id, str))                                
+      | (None, str) -> send_response client (Reducer (None, str))
       end
     | MapRequest (id, k, v) ->
       (* Validate the id *)
-      begin if is_valid id Map then
+      begin if is_valid id M then
         (* Execute the request *) 
         begin
-        match run id v with
+        match run id (k, v) with
         | None -> send_response client (RuntimeError (id, "fail"))
         | Some result -> send_response client (MapResults (id, result))
         end
@@ -53,10 +53,10 @@ let rec handle_request client =
       end
     | ReduceRequest (id, k, v) ->
       (* Validate the id *)
-      begin if is_valid id Reduce then
+      begin if is_valid id R then
         (* Execute the request *) 
         begin
-        match run id v with
+        match run id (k, v) with
         | None -> send_response client (RuntimeError (id, "fail"))
         | Some result -> send_response client (ReduceResults (id, result))
         end
