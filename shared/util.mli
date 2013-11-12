@@ -34,6 +34,7 @@ val read_whole_file : string -> string
 val split_words : string -> string list
 val split_spaces : string -> string list
 val split_to_class_lst : string -> string list
+val string_of_bodies : (string * body) list -> string
 
 (** Wrapper for OCaml's [Marshal.to_string] *)
 val marshal : 'a -> string
