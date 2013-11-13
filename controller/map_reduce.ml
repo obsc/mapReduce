@@ -32,12 +32,16 @@ let get (tbl : ('a, 'b) Hashtbl.t) (m : Mutex.t) (k : 'a) : 'b =
   Mutex.unlock m; v
 
 (* Handles all of the tasks *)
+(* Job is a single job, executed in its own thread
+ * Pops a worker, uses it to map, and then handles its output
+ * Remove worker if task has failed, but if a task has failed more than
+ * 5 times, then throw away the task and recover those workers *)
 let doAll pairs file init job addi out =
   (* Constructs a hashtable from job id to status *)
   (* Also creates a mutex lock, thread pool and initializes workers *)
   let tbl : (int, status) Hashtbl.t = Hashtbl.create 10 in
   let mutex : Mutex.t = Mutex.create () in
-  let p : pool = create 100 in
+  let p : pool = create 50 in
   let w : 'a worker_manager = init file in
   (* Removes completed tasks and queues up standby tasks *)
   let check (f, t : bool * int list) (id : int) : bool * int list =
@@ -57,7 +61,9 @@ let doAll pairs file init job addi out =
     if flag then () else loop (List.rev newtasks) in
   (* Populates hashtable with all Standby states and starts looping *)
   List.iteri (addi tbl) pairs;
-  loop (List.mapi (fun id x -> id) pairs);
+  let rec range (i : int) (a : int list) : int list =
+    if i = 0 then 0::a else range (i - 1) ((i - 1)::a) in
+  loop (range (List.length pairs) []);
   clean_up_workers w;
   destroy p;
   (* Generates output by combining all successful jobs *)
@@ -65,10 +71,6 @@ let doAll pairs file init job addi out =
 
 (* Maps all kv_pairs concurrently by assigning tasks *)
 let map kv_pairs map_filename : (string * string) list =
-  (* A single job, executed in its own thread
-   * Pops a worker, uses it to map, and then handles its output
-   * Remove worker if task has failed, but if a task has failed more than
-   * 5 times, then throw away the task and recover those workers *)
   let job (id : int) m tbl mutex () =
     let map_worker : mapper = pop_worker m in
     let mapTask (x : mapper list) (k : string) (v : string) =
@@ -105,10 +107,6 @@ let combine kv_pairs : (string * string list) list =
 
 (* Reduces all kvs_pairs concurrently by assigning tasks *)
 let reduce kvs_pairs reduce_filename : (string * string list) list =
-  (* A single job, executed in its own thread
-   * Pops a worker, uses it to map, and then handles its output
-   * Remove worker if task has failed, but if a task has failed more than
-   * 5 times, then throw away the task and recover those workers *)
   let job (id : int) r tbl mutex () =
     let reduce_worker : reducer = pop_worker r in
     let redTask (x : reducer list) (k : string) (v : string list) =
