@@ -21,10 +21,14 @@ let bindings_spec lst = is_sorted (List.map fst lst)
  *
  * val bindings : ('a, 'b) t -> (lst : ('a * 'b) list where bindings_spec lst)
  *)
+(* Dependent type for bindings:
+ *
+ * val bindings : 'a t -> (lst : (Ord.t * 'a) list where bindings_spec lst)
+ *)
 
 (** Map.mem *******************************************************************)
 
-let mem_spec table k b =
+let mem_spec k table b =
   b = List.exists (fun (k',_) -> k = k') (bindings table)
 
 (* Dependent type for mem: 
@@ -33,25 +37,36 @@ let mem_spec table k b =
  *        -> (k : 'a)
  *        -> (b : bool where mem_spec table k b)
  *)
+(* Dependent type for mem: 
+ *
+ * val mem : (k : Ord.t)
+ *        -> (table : 'a t)
+ *        -> (b : bool where mem_spec k table b)
+ *)
 
 (** Map.empty *****************************************************************)
 
-let empty_spec =
-  failwith "A true sign of intelligence is not knowledge but imagination."
+let empty_spec table = (List.length (bindings table)) = 0
 
 (* Dependent type for empty: 
  *
- * val empty : TODO
+ * val empty : (table : 'a t where empty_spec table)
  *)
 
 (** Map.find ******************************************************************)
 
-let find_spec =
-  failwith "A person who never made a mistake never tried anything new."
+let find_spec k table v =
+  try (List.assoc k (bindings table)) = v
+  with Not_found -> true
+
+(* if not mem k table then true
+  else (List.assoc k (bindings table)) = v *)
 
 (* Dependent type for find: 
  *
- * val find : TODO
+ * val find : (k : Ord.t)
+           -> (table : 'a t)
+           -> (v : 'a where find_spec k table v)
  *)
 
 
@@ -70,7 +85,7 @@ let bindings_without k table =
   List.filter (fun (k',_) -> k <> k') (bindings table)
 
 (* specification for add *)
-let add_spec table k v result =
+let add_spec k v table result =
   eqset (bindings_without k table) (bindings_without k result)
   && mem  k result
   && find k result = v
@@ -83,25 +98,45 @@ let add_spec table k v result =
  *        -> (result : ('a,'b) t where add_spec table k v result)
  *)
 
+(* Dependent type for add: 
+ *
+ * val add : (k: Ord.t)
+ *        -> (v: 'a)
+ *        -> (table : 'a t)
+ *        -> (result : 'a t where add_spec k v table result)
+ *)
+
+
 (** Map.remove ****************************************************************)
 
-let remove_spec = 
-  failwith "I have no special talent, I am only passionately curious."
+let remove_spec k table result = 
+  eqset (bindings_without k table) (bindings result)
+  && not (mem k result)
 
 (* Dependent type for remove: 
  *
- * val remove : TODO
+ * val remove : (k: Ord.t)
+ *           -> (table : 'a t)
+ *           -> (result : 'a t where remove_spec k table result)
  *)
 
 (** Map.equal *****************************************************************)
 
+let kvsubset cmp l1 l2 =
+  let is_in k v l = try List.assoc k l = v with Not_found -> false in
+  List.for_all (fun (k, v) -> is_in k v l2) l1
 
-let equal_spec =
-  failwith ("Insanity: doing the same thing over and over"^
-            " again and expecting different results.")
+let kvequal cmp l1 l2 =
+  kvsubset cmp l1 l2 && kvsubset cmp l2 l1
+
+let equal_spec cmp table1 table2 b =
+  b = kvequal cmp (bindings table1) (bindings table2)
 
 (* Dependent type for equal: 
- * val equal : TODO
+ * val equal : (cmp : 'a -> 'a -> bool)
+            -> (table1 : 'a t)
+            -> (table2 : 'a t)
+            -> (b : bool where equal_spec cmp table1 table2 b)
  *)
 
 end
