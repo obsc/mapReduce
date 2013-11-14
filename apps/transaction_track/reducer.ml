@@ -3,17 +3,12 @@ open Int64;;
 let (key, values) = Program.get_input() in
 let get_val (v : string) : (int * int) * bool * int64 = Util.unmarshal v in
 let trans : ((int * int) * bool * int64) list = List.map get_val values in
-let rev_cmp ((t_b1, t_t1), x1, y1) ((t_b2, t_t2), x2, y2) : int =
-  if t_b1 < t_b2 then 1
-  else if t_b1 > t_b2 then -1
-  else if t_t1 < t_t2 then 1
-  else if t_t1 > t_t2 then -1
-  else 0 in
-let rec get_sum trans acc : int64 =
-  match trans with
-  | ((t_b, t_t), a, amount)::t -> begin
-    if a then get_sum t (add acc amount)
-    else acc
-  end
-  | []   -> acc in
-Program.set_output [to_string (get_sum (List.sort rev_cmp trans) 0L)]
+let cmp (t_b1, t_t1 : int * int) (t_b2, t_t2 : int * int) : bool =
+  if t_b1 > t_b2 then true
+  else if t_b1 = t_b2 && t_t1 >= t_t2 then true
+  else false in
+let check_clear t1 (t2, a, x) = if not a && cmp t2 t1 then t2 else t1 in
+let last : int * int = List.fold_left check_clear (0, 0) trans in
+let add_if acc (t, a, amount) : int64 =
+  if a && cmp t last then add acc amount else acc in
+Program.set_output [to_string (List.fold_left add_if 0L trans)]
