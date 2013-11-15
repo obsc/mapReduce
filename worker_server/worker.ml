@@ -26,49 +26,39 @@ let send_response client response =
 let rec handle_request client =
   let get_connection_status v = 
     match v with
-    | InitMapper source ->
-      begin
-      match build source with
-      | (Some id, str) -> add id M;
-                          send_response client (Mapper (Some id, str))
-      | (None, str) -> send_response client (Mapper (None, str))
-      end
-    | InitReducer source ->
-      begin
-      match build source with
-      | (Some id, str) -> add id R;
-                          send_response client (Reducer (Some id, str))                                
-      | (None, str) -> send_response client (Reducer (None, str))
-      end
-    | MapRequest (id, k, v) ->
-      (* Validate the id *)
-      begin if is_valid id M then
-        (* Execute the request *) 
-        begin
-        match run id (k, v) with
-        | None -> send_response client (RuntimeError (id, "fail"))
-        | Some result -> send_response client (MapResults (id, result))
+      | InitMapper source -> begin match build source with
+        | (Some id, str) -> add id M;
+                            send_response client (Mapper (Some id, str))
+        | (None, str) -> send_response client (Mapper (None, str))
         end
+      | InitReducer source -> begin match build source with
+        | (Some id, str) -> add id R;
+                            send_response client (Reducer (Some id, str))                                
+        | (None, str) -> send_response client (Reducer (None, str))
+        end
+      | MapRequest (id, k, v) ->
+        (* Validate the id *)
+        begin if is_valid id M then
+          (* Execute the request *)
+          try match run id (k, v) with
+          | None -> send_response client (RuntimeError (id, "failure"))
+          | Some result -> send_response client (MapResults (id, result))
+          with e -> send_response client (RuntimeError (id, "failure"))
         else send_response client (InvalidWorker id)
-      end
-    | ReduceRequest (id, k, v) ->
-      (* Validate the id *)
-      begin if is_valid id R then
-        (* Execute the request *) 
-        begin
-        match run id (k, v) with
-        | None -> send_response client (RuntimeError (id, "fail"))
-        | Some result -> send_response client (ReduceResults (id, result))
         end
-      else send_response client (InvalidWorker id)
-      end in
+      | ReduceRequest (id, k, v) ->
+        (* Validate the id *)
+        begin if is_valid id R then
+          (* Execute the request *) 
+          try match run id (k, v) with
+          | None -> send_response client (RuntimeError (id, "failure"))
+          | Some result -> send_response client (ReduceResults (id, result))
+          with e -> send_response client (RuntimeError (id, "failure"))
+        else send_response client (InvalidWorker id)
+        end in
   match Connection.input client with
-    Some v ->
-      begin
-        if get_connection_status v then handle_request client
-        else ()
-      end
-  | None ->
+    | Some v -> if get_connection_status v then handle_request client else ()
+    | None ->
       Connection.close client;
       print_endline "Connection lost while waiting for request."
 
