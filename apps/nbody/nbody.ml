@@ -2,7 +2,15 @@ open Util
 
 (* Create a transcript of body positions for `steps` time steps *)
 let make_transcript (bodies : (string * body) list) (steps : int) : string = 
-  failwith "What's that blue thing...doing here?"
+  let pair_one acc next cur =
+    match (next, cur) with
+    | (id1, body1, id2, body2) -> if id1 = id2 then acc
+                                  else let pairing = (id1, body1, id2, body2) in
+                                       (steps, Util.marshal pairing)::acc
+  let pair acc next = 
+    acc@(List.fold_left (pair_one next) [] bodies) in
+  let kv_pairs = List.fold_left (pair) [] bodies in
+  Map_reduce.map_reduce "nbody" "mapper" "reducer" kv_pairs
 
 let simulation_of_string = function
   | "binary_star" -> Simulations.binary_star
