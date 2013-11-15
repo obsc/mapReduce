@@ -17,9 +17,6 @@ let accel (m1, l1, v1) (m2, l2, v2) : vector =
     let mag = s_divide num denom in
     scale_vector mag (unit_vector l1 l2) in
 
-let (a,b) = accel body1 body2 in
-print_endline ((s_to_string a) ^ " " ^ (s_to_string b));
-
 let a1 = (marshal (id1, body1), marshal (accel body1 body2)) in
 let a2 = (marshal (id2, body2), marshal (accel body2 body1)) in
 

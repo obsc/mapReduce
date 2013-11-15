@@ -19,10 +19,6 @@ let bindings_spec lst = is_sorted (List.map fst lst)
 
 (* Dependent type for bindings:
  *
- * val bindings : ('a, 'b) t -> (lst : ('a * 'b) list where bindings_spec lst)
- *)
-(* Dependent type for bindings:
- *
  * val bindings : 'a t -> (lst : (Ord.t * 'a) list where bindings_spec lst)
  *)
 
@@ -31,12 +27,6 @@ let bindings_spec lst = is_sorted (List.map fst lst)
 let mem_spec k table b =
   b = List.exists (fun (k',_) -> k = k') (bindings table)
 
-(* Dependent type for mem: 
- *
- * val mem : (table : ('a,'b) t)
- *        -> (k : 'a)
- *        -> (b : bool where mem_spec table k b)
- *)
 (* Dependent type for mem: 
  *
  * val mem : (k : Ord.t)
@@ -58,9 +48,6 @@ let empty_spec table = (List.length (bindings table)) = 0
 let find_spec k table v =
   try (List.assoc k (bindings table)) = v
   with Not_found -> true
-
-(* if not mem k table then true
-  else (List.assoc k (bindings table)) = v *)
 
 (* Dependent type for find: 
  *
@@ -89,14 +76,6 @@ let add_spec k v table result =
   eqset (bindings_without k table) (bindings_without k result)
   && mem  k result
   && find k result = v
-
-(* Dependent type for add: 
- *
- * val add : (table : ('a,'b) t)
- *        -> (k:'a)
- *        -> (v:'b)
- *        -> (result : ('a,'b) t where add_spec table k v result)
- *)
 
 (* Dependent type for add: 
  *
