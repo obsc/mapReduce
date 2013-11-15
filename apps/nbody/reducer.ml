@@ -2,7 +2,8 @@ open Util;;
 open Plane;;
 
 let (key, values) = Program.get_input() in
-let (mass, pos, velocity) : (scalar * point * vector) = unmarshal key in
+let (_,body) : string * body = unmarshal key in
+let (mass, pos, velocity) = body in
 let get_val (v : string) : vector = unmarshal v in
 let accel : vector = Plane.sum () (List.map get_val values) in
 

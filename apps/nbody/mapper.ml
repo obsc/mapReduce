@@ -4,7 +4,8 @@ open Plane;;
 let (key, value) = Program.get_input() in
 
 (* The value read in is a tuple of informations*)
-let (body1, body2) : (body * body) = unmarshal value in
+let (id1, body1) : (string * body) = unmarshal key in
+let (id2, body2) : (string * body) = unmarshal value in
 
 let scale_vector scale (v1, v2) = 
 	(s_times v1 scale, s_times v2 scale) in
@@ -20,7 +21,7 @@ let force (m1, l1, v1) (m2,l2,v2) : vector =
 let accel (m1, l1, v1) body2 = 
 	scale_vector (s_divide 1. m1) (force body1 body2) in
 
-let a1 = (marshal (body1), marshal (accel body1 body2)) in
-let a2 = (marshal (body2), marshal (accel body2 body1)) in
+let a1 = (marshal (id1, body1), marshal (accel body1 body2)) in
+let a2 = (marshal (id2, body2), marshal (accel body2 body1)) in
 
-Program.set_output (a1::[a2])
+Program.set_output ([a1;a2])
