@@ -1,37 +1,33 @@
-open Util
+open Util;;
 
 (* Create a transcript of body positions for `steps` time steps *)
-let make_transcript (bodies : (string * body) list) (steps : int) : string = 
-
+let make_transcript (bodies : (string * body) list) (steps : int) : string =
   (* Recursive call *)
-  let rec exec_step (bodies : (string * body) list) (steps : int) (acc : string) : string = 
+  let rec exec_step bodies steps (acc : string) : string =
     (* Base case *)
-    if steps = 0 then acc
-    else 
-      (* Find the new accelerations*)
-      (*
-      let pair_one acc next cur =
-        match (next, cur) with
-        | (body1, body2) -> if id1 = id2 then acc
-                                      else let pairing = (id1, body1, id2, body2) in
-                                           (steps, Util.marshal pairing)::acc *)
-      let pair acc next = acc in 
-
-      let kv_pairs = List.fold_left (pair) [] bodies in
-      let result = Map_reduce.map_reduce "nbody" "mapper" "reducer" kv_pairs in
-
-      let split_marshal acc next = 
-        match next with 
-        | (id, body) -> begin
-          match body with
-          | [] -> acc
-          | h::t -> (id, unmarshal h)::acc
+    if steps = 0 then acc else
+    (* Calculate pairs of bodies *)
+    let rec pair bodies acc = match bodies with
+      | []   -> acc
+      | h::t -> pair t (List.fold_left (fun a x -> (h, x)::a) acc t) in
+    (* Marshals pairs of bodies *)
+    let kv_pairs : (string * string) list =
+      List.rev_map (fun (a,b) -> (marshal a, marshal b)) (pair bodies []) in
+    (* Executes map_reduce *)
+    let result = Map_reduce.map_reduce "nbody" "mapper" "reducer" kv_pairs in
+    (* Unmarshal and get next value *)
+    let split_marshal (a, b : string * string list) : string * body =
+      let (id, prev : string * body) = unmarshal a in
+      match b with
+        | []   -> failwith "invalid input"
+        | h::t -> begin
+          let next : body = unmarshal h in (id, next)
         end in
-      let new_bodies = List.fold_left (split_marshal) [] result in
-
-      exec_step (new_bodies) (steps - 1) (acc^(string_of_bodies new_bodies)) in
-  exec_step bodies steps (string_of_bodies bodies)
-
+    (* Unmarshals all output *)
+    let new_bodies : (string * body) list = List.rev_map split_marshal result in
+    print_endline (string_of_int steps);
+    exec_step (new_bodies) (steps - 1) (acc^(string_of_bodies new_bodies)) in
+  exec_step bodies steps (string_of_bodies bodies) in
 
 let simulation_of_string = function
   | "binary_star" -> Simulations.binary_star
@@ -41,9 +37,9 @@ let simulation_of_string = function
   | "system" -> Simulations.system
   | "terrible_situation" -> Simulations.terrible_situation
   | "zardoz" -> Simulations.zardoz
-  | _ -> failwith "Invalid simulation name. Check `shared/simulations.ml`"
+  | _ -> failwith "Invalid simulation name. Check `shared/simulations.ml`" in
 
-let main (args : string array) : unit = 
+let main (args : string array) : unit =
   if Array.length args < 3 then 
     print_endline "Usage: nbody <simulation> [<outfile>]
   <simulation> is the name of a simulation from shared/simulations.ml
@@ -54,4 +50,6 @@ let main (args : string array) : unit =
     let out_channel = 
       if Array.length args > 3 then open_out args.(3) else stdout in
     output_string out_channel (num_bodies_str ^ "\n" ^ transcript);
-    close_out out_channel end
+    close_out out_channel end in
+
+main Sys.argv

@@ -11,7 +11,8 @@ UTIL_SOURCES = shared/plane.mli shared/plane.ml shared/util.mli shared/util.ml \
 shared/simulations.mli shared/simulations.ml
 
 SHARED_SOURCES = shared/thread_pool.mli shared/thread_pool.ml \
-shared/connection.mli shared/connection.ml shared/protocol.mli shared/protocol.ml
+shared/connection.mli shared/connection.ml shared/protocol.mli shared/protocol.ml \
+shared/plane.mli shared/plane.ml shared/simulations.mli shared/simulations.ml
 
 WS_SOURCES = worker_server/program.mli worker_server/program.ml worker_server/worker.mli worker_server/worker.ml \
 worker_server/worker_server.mli worker_server/worker_server.ml
