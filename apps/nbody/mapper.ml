@@ -4,8 +4,7 @@ open Plane;;
 let (key, value) = Program.get_input() in
 
 (* The value read in is a tuple of informations*)
-let (body1, body2) : ((scalar * point * vector) * (scalar * point * vector)) = 
-	unmarshal value in
+let (body1, body2) : (body * body) = unmarshal value in
 
 let scale_vector scale (v1, v2) = 
 	(s_times v1 scale, s_times v2 scale) in
